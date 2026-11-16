@@ -135,7 +135,7 @@ def test_schedule_of_unknown_brigade_raises_not_found(service):
 
 
 def test_d4_notifier_crash_does_not_break_saved_assignment(brigades, projects, brigade, stage_id, caplog):
-    """Регресійний тест D4: несподіваний виняток сповіщувача не має перетворювати успішне призначення на 500."""
+    """Регресійний тест D4: виняток сповіщувача не має перетворювати успішне призначення на 500."""
     crashing = create_autospec(INotifier, instance=True)
     crashing.notify.side_effect = RuntimeError("bot misconfigured")
     service = AssignmentService(brigades, projects, crashing)
