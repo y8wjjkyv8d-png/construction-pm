@@ -20,6 +20,8 @@ dependencies = [
 dev = [
     "ruff==0.17.5",
     "build==1.6.1",
+    "pytest==9.2.0",
+    "pytest-cov==7.1.0",
 ]
 
 [project.scripts]
@@ -35,3 +37,16 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["construction_pm"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_also = ["if __name__ == .__main__.:", "raise NotImplementedError"]
