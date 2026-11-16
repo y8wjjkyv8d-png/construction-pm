@@ -42,14 +42,21 @@ class AssignmentService(IAssignmentService):
                 )
         self._brigades.save_assignment(new)
 
-        result = self._notifier.notify(
+        self._notify(
             brigade.contact or brigade.foreman,
             f"Бригаду призначено на етап «{stage.title}» з {start:%d.%m.%Y} по {end:%d.%m.%Y}",
         )
-        if not result.delivered:
-            # Помилка доставки не скасовує призначення (NFR компонента Notifications).
-            log.warning("Сповіщення не доставлено: %s", result.error)
         return new
+
+    def _notify(self, recipient: str, text: str) -> None:
+        """Помилка доставки не скасовує вже збережене призначення (NFR компонента Notifications)."""
+        try:
+            result = self._notifier.notify(recipient, text)
+        except Exception as exc:  # noqa: BLE001 — будь-яка помилка зовнішнього адаптера
+            log.warning("Сповіщувач завершився з помилкою: %s", exc)
+            return
+        if not result.delivered:
+            log.warning("Сповіщення не доставлено: %s", result.error)
 
     def brigade_schedule(self, brigade_id: UUID) -> list[Assignment]:
         if self._brigades.get(brigade_id) is None:
