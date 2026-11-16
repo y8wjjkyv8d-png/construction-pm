@@ -102,3 +102,12 @@ class TestProject:
         p.add_stage("B")
 
         assert p.progress == 20
+
+
+def test_d1_progress_rounds_half_up():
+    """Регресійний тест D1: 22.5 % має округлюватись до 23, а не до 22 (банківське округлення)."""
+    p = make_project()
+    p.add_stage("A").set_progress(45)
+    p.add_stage("B")
+
+    assert p.progress == 23
