@@ -50,5 +50,6 @@ class TelegramNotifier(INotifier):
             except OSError as exc:  # URLError, TimeoutError, ConnectionResetError тощо
                 last_error = str(exc)
             log.info("Спроба %d/%d не вдалася: %s", attempt, self._attempts, last_error)
-            time.sleep(0.5 * attempt)
+            if attempt < self._attempts:
+                time.sleep(0.5 * attempt)
         return DeliveryResult(delivered=False, error=last_error)
