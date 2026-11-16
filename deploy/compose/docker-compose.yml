@@ -1,0 +1,52 @@
+# Повний стек ConstructionPM: застосунок + мок Telegram Bot API.
+# Запуск з кореня репозиторію:
+#   cp deploy/compose/.env.example deploy/compose/.env
+#   docker compose -f deploy/compose/docker-compose.yml up -d
+
+name: construction-pm
+
+services:
+  telegram-mock:
+    image: python:3.12.8-alpine3.21
+    command: ["python", "/srv/mock.py"]
+    environment:
+      PORT: "8081"
+    volumes:
+      - ./telegram-mock/mock.py:/srv/mock.py:ro
+    user: "10002:10002"
+    read_only: true
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2).status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    image: construction-pm:1.0
+    env_file:
+      - .env
+    environment:
+      TELEGRAM_API_BASE: http://telegram-mock:8081
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - app-data:/data
+    networks: [backend]
+    depends_on:
+      telegram-mock:
+        condition: service_healthy
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  app-data:
