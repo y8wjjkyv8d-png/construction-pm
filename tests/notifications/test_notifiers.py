@@ -63,3 +63,20 @@ def test_telegram_non_200_is_reported(no_sleep):
         result = TelegramNotifier("T", attempts=1).notify("1", "x")
 
     assert result == result.__class__(delivered=False, error="HTTP 500")
+
+
+def test_d2_network_os_error_is_returned_as_result_not_raised(no_sleep):
+    """Регресійний тест D2: ConnectionResetError (OSError, не URLError) не повинен «вилітати» з notify()."""
+    with patch("urllib.request.urlopen", side_effect=ConnectionResetError("reset by peer")):
+        result = TelegramNotifier("T", attempts=2).notify("1", "x")
+
+    assert not result.delivered
+    assert "reset by peer" in result.error
+
+
+def test_d3_no_sleep_after_last_failed_attempt(no_sleep):
+    """Регресійний тест D3: після останньої невдалої спроби чекати не потрібно."""
+    with patch("urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+        TelegramNotifier("T", attempts=3).notify("1", "x")
+
+    assert no_sleep.call_count == 2
