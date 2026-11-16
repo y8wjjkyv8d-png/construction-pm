@@ -86,6 +86,16 @@ construction-pm serve --port 8000 --db construction.db   # REST API, докум�
 
 Сповіщення за замовчуванням виводяться в консоль. Щоб надсилати їх у Telegram, задайте змінну середовища `TELEGRAM_BOT_TOKEN`; тоді Composition Root підставить `TelegramNotifier`.
 
+## Розгортання (Docker / Kubernetes)
+
+```bash
+docker build -f deploy/docker/Dockerfile -t construction-pm:1.0 .                         # образ
+cp deploy/compose/.env.example deploy/compose/.env && docker compose -f deploy/compose/docker-compose.yml up -d   # стек
+kubectl apply -f deploy/k8s/                                                               # кластер
+```
+
+Повна інструкція і команди перевірки: [`docs/deployment/DEPLOYMENT.md`](docs/deployment/DEPLOYMENT.md).
+
 ## Тестування
 
 ```bash

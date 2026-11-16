@@ -1,0 +1,26 @@
+# Контекст збірки — корінь репозиторію; у образ потрапляють лише pyproject.toml, README.md і src/
+.git
+.github
+.gitignore
+**/__pycache__
+**/*.py[cod]
+.venv
+venv
+build
+dist
+*.egg-info
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+coverage.xml
+tests
+docs
+deploy
+*.db
+.env
+.env.*
+!.env.example
+.idea
+.vscode
+.DS_Store

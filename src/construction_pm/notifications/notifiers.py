@@ -30,10 +30,12 @@ class TelegramNotifier(INotifier):
     NFR: тайм-аут 5 с, до 3 спроб; помилка повертається як DeliveryResult, а не виняток.
     """
 
-    API = "https://api.telegram.org/bot{token}/sendMessage"
+    API_BASE = "https://api.telegram.org"
 
-    def __init__(self, token: str, timeout_s: float = 5.0, attempts: int = 3) -> None:
-        self._url = self.API.format(token=token)
+    def __init__(
+        self, token: str, timeout_s: float = 5.0, attempts: int = 3, api_base: str = API_BASE
+    ) -> None:
+        self._url = f"{api_base.rstrip('/')}/bot{token}/sendMessage"
         self._timeout = timeout_s
         self._attempts = attempts
 
