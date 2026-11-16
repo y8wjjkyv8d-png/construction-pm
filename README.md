@@ -86,6 +86,14 @@ construction-pm serve --port 8000 --db construction.db   # REST API, докум�
 
 Сповіщення за замовчуванням виводяться в консоль. Щоб надсилати їх у Telegram, задайте змінну середовища `TELEGRAM_BOT_TOKEN`; тоді Composition Root підставить `TelegramNotifier`.
 
+## Тестування
+
+```bash
+pytest --cov --cov-report=term --cov-report=html   # 91 тест, покриття 99 % (домен — 100 %)
+```
+
+Unit-тести кожного компонента з тестовими двійниками, інтеграційні тести через Composition Root, регресійні тести виправлених дефектів. Подробиці, таблиця дефектів і метрики: [`docs/testing/QA_REPORT.md`](docs/testing/QA_REPORT.md).
+
 ## Демонстраційний сценарій (вхід → вихід)
 
 `construction-pm demo` проходить через усі 5 компонентів: HTTP (WebAPI) → ProjectCore → WorkforceCore → SQLite (Persistence) → сповіщення (Notifications). Скорочений вивід:
