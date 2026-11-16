@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: construction-pm
+  namespace: construction-pm
+  labels:
+    app.kubernetes.io/name: construction-pm
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: construction-pm
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1         # під час оновлення не більше 1 додаткового Pod
+      maxUnavailable: 0   # жодна репліка не вимикається, доки нова не готова
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: construction-pm
+        app.kubernetes.io/version: "1.0.0"
+    spec:
+      automountServiceAccountToken: false
+      affinity:
+        podAntiAffinity:   # репліки бажано на різних вузлах
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: construction-pm
+      terminationGracePeriodSeconds: 20
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: construction-pm:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: construction-pm-config
+          env:
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: construction-pm-secret
+                  key: TELEGRAM_BOT_TOKEN
+                  optional: true   # без секрету сповіщення пишуться в журнал
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30   # до 60 с на «холодний» старт
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        # Кожна репліка має власний файл SQLite (див. DEPLOYMENT.md, «Обмеження»).
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

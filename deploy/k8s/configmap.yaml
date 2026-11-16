@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: construction-pm-config
+  namespace: construction-pm
+  labels:
+    app.kubernetes.io/name: construction-pm
+data:
+  CPM_HOST: "0.0.0.0"
+  CPM_PORT: "8000"
+  CPM_LOG_LEVEL: "info"
+  CPM_DB_PATH: "/data/construction.db"
