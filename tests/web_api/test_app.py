@@ -136,3 +136,21 @@ def test_d5_validation_message_names_field_without_location_prefix(client):
     resp = client.get("/projects/not-a-uuid")
 
     assert resp.json()["message"].startswith("project_id: ")
+
+
+def test_ready_reports_dependency_state(projects, assignments):
+    states = iter([True, False])
+    client = TestClient(create_app(projects, assignments, readiness=lambda: next(states)))
+
+    assert client.get("/ready").status_code == 200
+    resp = client.get("/ready")
+    assert resp.status_code == 503 and resp.json() == {"status": "not_ready"}
+
+
+def test_ready_treats_exception_as_not_ready(projects, assignments):
+    def broken() -> bool:
+        raise RuntimeError("db down")
+
+    resp = TestClient(create_app(projects, assignments, readiness=broken)).get("/ready")
+
+    assert resp.status_code == 503

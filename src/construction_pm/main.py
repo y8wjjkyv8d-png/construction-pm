@@ -1,8 +1,12 @@
 """Composition Root: єдине місце, де створюються конкретні класи і зв'язуються інтерфейси.
 
 Запуск:
-    construction-pm serve [--db construction.db] [--port 8000]
+    construction-pm serve [--db construction.db] [--host 127.0.0.1] [--port 8000]
     construction-pm demo
+
+Конфігурація через змінні середовища (12-Factor App), аргументи CLI мають пріоритет:
+    CPM_DB_PATH, CPM_HOST, CPM_PORT, CPM_LOG_LEVEL,
+    TELEGRAM_BOT_TOKEN (секрет), TELEGRAM_API_BASE.
 """
 
 from __future__ import annotations
@@ -46,11 +50,13 @@ def build(db_path: str = "construction.db", notifier: INotifier | None = None) -
 
     if notifier is None:
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
-        notifier = TelegramNotifier(token) if token else ConsoleNotifier()
+        api_base = os.environ.get("TELEGRAM_API_BASE", TelegramNotifier.API_BASE)
+        notifier = TelegramNotifier(token, api_base=api_base) if token else ConsoleNotifier()
 
     project_service = ProjectService(repository=project_repo)
     assignment_service = AssignmentService(brigades=brigade_repo, projects=project_service, notifier=notifier)
-    return Container(app=create_app(project_service, assignment_service), db=db)
+    app = create_app(project_service, assignment_service, readiness=db.ping)
+    return Container(app=app, db=db)
 
 
 def run_demo() -> int:
@@ -92,9 +98,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="construction-pm", description="ConstructionPM")
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve", help="запустити REST API")
-    serve.add_argument("--db", default="construction.db")
-    serve.add_argument("--host", default="127.0.0.1")
-    serve.add_argument("--port", type=int, default=8000)
+    serve.add_argument("--db", default=os.environ.get("CPM_DB_PATH", "construction.db"))
+    serve.add_argument("--host", default=os.environ.get("CPM_HOST", "127.0.0.1"))
+    serve.add_argument("--port", type=int, default=int(os.environ.get("CPM_PORT", "8000")))
+    serve.add_argument("--log-level", default=os.environ.get("CPM_LOG_LEVEL", "info"))
     sub.add_parser("demo", help="виконати демонстраційний сценарій")
     args = parser.parse_args(argv)
 
@@ -103,5 +110,6 @@ def main(argv: list[str] | None = None) -> int:
 
     import uvicorn
 
-    uvicorn.run(build(args.db).app, host=args.host, port=args.port)
+    # Uvicorn коректно обробляє SIGTERM/SIGINT: дочікує активні запити (graceful shutdown).
+    uvicorn.run(build(args.db).app, host=args.host, port=args.port, log_level=args.log_level)
     return 0

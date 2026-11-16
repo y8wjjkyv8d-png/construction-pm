@@ -87,3 +87,25 @@ def test_cli_demo_runs_successfully(capsys):
     assert main(["demo"]) == 0
     out = capsys.readouterr().out
     assert "< 201" in out and "< 409" in out and "[сповіщення" in out
+
+
+def test_readiness_checks_real_database(client):
+    assert client.get("/ready").json() == {"status": "ready"}
+
+
+def test_telegram_notifier_is_selected_from_environment(monkeypatch):
+    from construction_pm.notifications.notifiers import TelegramNotifier
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "T")
+    monkeypatch.setenv("TELEGRAM_API_BASE", "http://telegram-mock:8081/")
+    captured = {}
+    monkeypatch.setattr(
+        "construction_pm.main.AssignmentService",
+        lambda brigades, projects, notifier: captured.setdefault("n", notifier),
+    )
+    monkeypatch.setattr("construction_pm.main.create_app", lambda *a, **k: None)
+
+    build(":memory:")
+
+    assert isinstance(captured["n"], TelegramNotifier)
+    assert captured["n"]._url == "http://telegram-mock:8081/botT/sendMessage"

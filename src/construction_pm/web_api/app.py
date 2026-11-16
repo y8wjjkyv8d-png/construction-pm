@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from uuid import UUID
 
 from fastapi import FastAPI, Request, status
@@ -30,7 +31,12 @@ HTTP_BY_ERROR: list[tuple[type[DomainError], int]] = [
 ]
 
 
-def create_app(projects: IProjectService, assignments: IAssignmentService) -> FastAPI:
+def create_app(
+    projects: IProjectService,
+    assignments: IAssignmentService,
+    readiness: Callable[[], bool] = lambda: True,
+) -> FastAPI:
+    """readiness — перевірка готовності залежностей (передається з Composition Root)."""
     app = FastAPI(title="ConstructionPM API", version="1.0.0")
 
     @app.exception_handler(DomainError)
@@ -52,7 +58,18 @@ def create_app(projects: IProjectService, assignments: IAssignmentService) -> Fa
 
     @app.get("/health")
     def health() -> dict[str, str]:
+        """Liveness: процес живий і обробляє запити."""
         return {"status": "ok"}
+
+    @app.get("/ready")
+    def ready() -> JSONResponse:
+        """Readiness: залежності (база даних) доступні — можна приймати трафік."""
+        try:
+            ok = readiness()
+        except Exception:  # noqa: BLE001
+            ok = False
+        code = status.HTTP_200_OK if ok else status.HTTP_503_SERVICE_UNAVAILABLE
+        return JSONResponse(status_code=code, content={"status": "ready" if ok else "not_ready"})
 
     @app.post("/projects", status_code=status.HTTP_201_CREATED, response_model=ProjectDTO)
     def create_project(body: ProjectCreateDTO) -> ProjectDTO:

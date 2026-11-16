@@ -59,6 +59,11 @@ class Database:
         with self._lock, self._conn:
             yield self._conn
 
+    def ping(self) -> bool:
+        """Перевірка доступності БД (для readiness-проби)."""
+        with self.transaction() as c:
+            return c.execute("SELECT 1").fetchone() == (1,)
+
     def close(self) -> None:
         self._conn.close()
 
