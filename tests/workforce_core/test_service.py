@@ -8,7 +8,7 @@ from construction_pm.common.errors import NotFoundError
 from construction_pm.project_core.domain import StageStatus
 from construction_pm.project_core.ports import IProjectQuery, StageView
 from construction_pm.workforce_core.domain import Brigade, BrigadeBusyError, StageClosedError
-from construction_pm.workforce_core.ports import DeliveryResult
+from construction_pm.workforce_core.ports import DeliveryResult, INotifier
 from construction_pm.workforce_core.service import AssignmentService
 from tests.fakes import InMemoryBrigadeRepository, RecordingNotifier
 
@@ -132,3 +132,16 @@ def test_failed_delivery_does_not_cancel_assignment(brigades, projects, brigade,
 def test_schedule_of_unknown_brigade_raises_not_found(service):
     with pytest.raises(NotFoundError):
         service.brigade_schedule(uuid4())
+
+
+def test_d4_notifier_crash_does_not_break_saved_assignment(brigades, projects, brigade, stage_id, caplog):
+    """Регресійний тест D4: несподіваний виняток сповіщувача не має перетворювати успішне призначення на 500."""
+    crashing = create_autospec(INotifier, instance=True)
+    crashing.notify.side_effect = RuntimeError("bot misconfigured")
+    service = AssignmentService(brigades, projects, crashing)
+
+    result = service.assign_brigade(brigade.id, stage_id, D1, D10)
+
+    assert brigades.assignments == [result]
+    crashing.notify.assert_called_once()
+    assert "bot misconfigured" in caplog.text
