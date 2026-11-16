@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +23,21 @@ jobs:
 
       - name: Форматування (ruff format --check)
         run: ruff format --check .
+
+      - name: Тести з покриттям (поріг 75 % для всього коду)
+        run: pytest --cov --cov-report=term --cov-report=xml --cov-report=html --cov-fail-under=75
+
+      - name: Поріг покриття доменного шару (≥ 75 %)
+        run: coverage report --include="*/project_core/*,*/workforce_core/*" --fail-under=75
+
+      - name: Зберегти звіт покриття
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
 
       - name: Збірка артефакту (wheel + sdist)
         run: python -m build
