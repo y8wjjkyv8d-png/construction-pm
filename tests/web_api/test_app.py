@@ -129,3 +129,10 @@ def test_invalid_uuid_in_path_is_rejected(client):
     resp = client.get("/projects/not-a-uuid")
 
     assert resp.status_code == 422
+
+
+def test_d5_validation_message_names_field_without_location_prefix(client):
+    """Регресійний тест D5: у повідомленні має бути «project_id: …», а не «path.project_id: …»."""
+    resp = client.get("/projects/not-a-uuid")
+
+    assert resp.json()["message"].startswith("project_id: ")
