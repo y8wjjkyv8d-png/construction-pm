@@ -78,7 +78,8 @@ class Project:
 
     @property
     def progress(self) -> int:
-        """Середній прогрес проєкту за етапами (0, якщо етапів немає)."""
+        """Середній прогрес проєкту за етапами, округлений «до більшого» з 0,5 (0, якщо етапів немає)."""
         if not self.stages:
             return 0
-        return round(sum(s.progress for s in self.stages) / len(self.stages))
+        total, n = sum(s.progress for s in self.stages), len(self.stages)
+        return (2 * total + n) // (2 * n)  # ціле округлення half-up без float

@@ -41,7 +41,10 @@ def create_app(projects: IProjectService, assignments: IAssignmentService) -> Fa
     @app.exception_handler(RequestValidationError)
     async def dto_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
         first = exc.errors()[0]
-        field = ".".join(str(x) for x in first["loc"] if x != "body")
+        loc = list(first["loc"])
+        if loc and loc[0] in ("body", "path", "query", "header", "cookie"):
+            loc = loc[1:]
+        field = ".".join(str(x) for x in loc)
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={"error": "validation_error", "message": f"{field}: {first['msg']}"},
