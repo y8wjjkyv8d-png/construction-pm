@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "construction-pm"
+version = "1.0.0"
+description = "ConstructionPM — система управління будівельними проєктами"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Dmytro Klymenko" }]
+dependencies = [
+    "fastapi==0.163.1",
+    "pydantic==2.14.3",
+    "uvicorn==0.54.0",
+    "httpx2==2.16.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.17.5",
+    "build==1.6.1",
+]
+
+[project.scripts]
+construction-pm = "construction_pm.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N"]
